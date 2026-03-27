@@ -375,3 +375,6 @@ __marimo__/
 # Diretórios
 data/raw/*
 data/processed/*
+
+# Pastas Extras
+anotações.txt
