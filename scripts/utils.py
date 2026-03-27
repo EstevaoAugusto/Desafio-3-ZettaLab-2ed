@@ -8,6 +8,12 @@ Inclui:
     - plotting, logging, timers, e utilitários comuns de préprocessamento.
 """
 
+import zipfile
+from typing import Optional
+import time
+import basedosdados as bd
+import os
+import shutil
 import requests
 from typing import Tuple
 import pandas as pd
@@ -15,18 +21,29 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
 import numpy as np
+import sys
+
+current_dir = os.getcwd()
+parent_dir = os.path.abspath(os.path.join(current_dir, '..'))
+if parent_dir not in sys.path:
+    sys.path.append(parent_dir)
+    
+import config_path          # Módulo que salva todos os caminhos de diretórios utilizados no projeto
 
 # -------------------------
 #  Auxiliador de manipulação de requisição HTTP
 # -------------------------
-def download_file(url: str, file_name : str, save_path: Path | str):
+def download_file(url: str, file_name : str, save_path: Path = config_path.RAW_DATA_DIRECTORY_PATH):
     """
     Baixa o arquivo do URL e o salva no caminho local
 
-    Parameters:
+    Args:
         url (str): URL do arquivo a ser baixado
         file_name (str): Nome do arquivo
         save_path (Path | str): Caminho onde o arquivo será salvo.
+    
+    Returns:
+        Path do arquivo salvo
     """
 
     # Fazer requisição
@@ -39,7 +56,90 @@ def download_file(url: str, file_name : str, save_path: Path | str):
             f.write(chunk)
 
     print(f"Arquivo baixado e salvo em: {save_path}/{file_name}")
+    return Path(save_path) / file_name
 
+def check_contained_files_zip(zip_file_path: Path) -> list[str]:
+    """
+    Retorna uma lista de arquivos contido no ZIP
+    
+    Args:
+        zip_file_path (Path): Caminho completo do arquivo ZIP.
+    Returns:
+        extracted_files (list[str]): Lista de arquivos contido no ZIP.
+    """
+    
+    if not zip_file_path.exists():
+        raise FileNotFoundError(f"ERRO: '{zip_file_path}' não existe")
+    
+    if not zip_file_path.is_file():
+        raise FileNotFoundError(f"ERRO: '{zip_file_path}' não é um arquivo")
+    
+    with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
+        extracted_files = zip_ref.namelist()
+    
+    return extracted_files
+
+# -----------------------------------
+#  Descompactar arquivo Zip
+# -----------------------------------
+def unzip_and_clean(zip_file_path: Path, files_to_keep: Optional[list[str]] | str = 'all', extract_path: Path = config_path.RAW_DATA_DIRECTORY_PATH):
+    """
+    Descompacta um arquivo ZIP e remove todos os arquivos que você não quer
+
+    Args:
+        zip_file_path (Path): Caminho completo para salvar o ZIP (ex: "C:/temp/meuarquivo.zip").
+        files_to_keep (list[str]): Nome do arquivo que queremos manter (ex: "importante.txt").
+        extract_path (Path | str): Caminho do diretório em que o arquivo ZIP está localizado.
+    Returns:
+        kept_paths (list): Lista de caminhos dos arquivos mantidos.
+    """
+    
+    if isinstance(files_to_keep, list) and len(files_to_keep) <= 0:
+        raise ValueError(f"ERRO: Argumento 'files_to_keep' não possui tamanho maior que zero!")
+    
+    if not zip_file_path.exists():
+        raise FileNotFoundError(f"ERRO: '{zip_file_path}' não existe")
+    
+    if not zip_file_path.is_file():
+        raise FileNotFoundError(f"ERRO: '{zip_file_path}' não é um arquivo")
+    
+    # 1. Extrair todo o conteúdo
+    with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
+        zip_ref.extractall(extract_path)
+        extracted_files = zip_ref.namelist()
+        if files_to_keep == 'all':
+            files_to_keep = extracted_files
+        
+    print(f"Arquivos extraídos em: {extract_path}")
+
+    # 2. Percorrer todos os arquivos e remover os indesejados
+    kept_paths = []
+
+    for file in extracted_files:
+        file_path = Path(extract_path) / file
+
+        # ignora diretórios
+        if file_path.is_dir():
+            continue
+
+        file_name = file_path.name
+
+        if file_name in files_to_keep:
+            kept_paths.append(file_path)
+        else:
+            file_path.unlink()
+            print(f"Removido: {file_path}")
+    
+    
+    try:
+        zip_file_path.unlink()
+        print(f"ZIP removido: {zip_file_path}")
+    except Exception as e:
+        print(f"ERRO ao remover ZIP: {e}")
+    
+    # 3. Retornar os arquivos que foram mantidos
+    print(f"Arquivos mantidos: {kept_paths}")
+    return kept_paths
 
 # -----------------------------
 # Auxiliadores de Dataframe
@@ -116,7 +216,6 @@ def log(message: str):
 
 def timer(func):
     """Decorator to time function execution."""
-    import time
     def wrapper(*args, **kwargs):
         start = time.time()
         result = func(*args, **kwargs)
@@ -126,7 +225,7 @@ def timer(func):
     return wrapper
 
 # -----------------------------
-# Funções utilitárias
+# Checagem de valores e estado do DataFrame
 # -----------------------------
 def ensure_columns(df: pd.DataFrame, columns: list[str]):
     """

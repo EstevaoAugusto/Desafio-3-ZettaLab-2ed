@@ -13,18 +13,12 @@ import joblib
 from pathlib import Path
 import sys
 
-# Tenta usar o __file__, se falhar (comum em alguns kernels), usa o caminho atual
-try:
-    base_path = os.path.dirname(__file__)
-except NameError:
-    base_path = os.getcwd()
-
-# Adiciona o diretório pai (..) ao path do sistema de forma segura
-parent_dir = os.path.abspath(os.path.join(base_path, '..'))
+current_dir = os.getcwd()
+parent_dir = os.path.abspath(os.path.join(current_dir, '..'))
 if parent_dir not in sys.path:
     sys.path.append(parent_dir)
-
-import config_path
+    
+import config_path          # Módulo que salva todos os caminhos de diretórios utilizados no projeto
 
 # -----------------------------
 # Auxiliadores de escrita e carregamento de arquivos

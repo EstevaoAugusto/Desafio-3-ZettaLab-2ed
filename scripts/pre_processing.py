@@ -13,6 +13,14 @@ import pandas as pd
 import os
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from pathlib import Path
+import sys
+
+current_dir = os.getcwd()
+parent_dir = os.path.abspath(os.path.join(current_dir, '..'))
+if parent_dir not in sys.path:
+    sys.path.append(parent_dir)
+    
+import config_path          # Módulo que salva todos os caminhos de diretórios utilizados no projeto
 
 # -----------------------------
 # Auxiliadores de pré processamento
@@ -60,20 +68,13 @@ def remove_blank_rows_cols_csv(caminho_arquivo: str | Path, separador: str = ','
         print(f"Erro ao processar o CSV: {e}")
         return pd.DataFrame()
 
-def remove_blank_rows_cols_excel(df: pd.DataFrame, limite_nulos: float = 0.9) -> pd.DataFrame:
+def remove_blank_rows_cols_excel(df: pd.DataFrame) -> pd.DataFrame:
     """
     Remove automaticamente linhas e colunas inúteis de um DataFrame vindo do Excel.
     
-    Ações:
-    1. Remove colunas que são 100% vazias.
-    2. Remove linhas que são 100% vazias.
-    3. Remove colunas que possuem mais de 'limite_nulos' de valores NaN.
-    4. Remove espaços em branco extras nos nomes das colunas.
-
     Args:
         df (pd.DataFrame): O DataFrame carregado do Excel.
-        limite_nulos (float): De 0 a 1. Se 0.9, remove colunas com 90% ou mais de nulos.
-
+    
     Returns:
         pd.DataFrame: O DataFrame limpo.
     """
@@ -84,18 +85,7 @@ def remove_blank_rows_cols_excel(df: pd.DataFrame, limite_nulos: float = 0.9) ->
     df_limpo = df_limpo.dropna(how='all', axis=0) # Linhas
     df_limpo = df_limpo.dropna(how='all', axis=1) # Colunas
 
-    # 2. Remover colunas com excesso de nulos (sujeira de formatação)
-    # Ex: Uma coluna de "Observações" onde quase ninguém escreveu nada
-    df_limpo = df_limpo.loc[:, df_limpo.isnull().mean() < limite_nulos]
-
-    # 3. Limpar os nomes das colunas (Excel costuma ter " Nome Cliente " com espaços)
-    df_limpo.columns = [str(col).strip() for col in df_limpo.columns]
-    
-    # 4. Remover colunas 'Unnamed' (aquelas colunas vazias que o pandas cria)
-    colunas_validas = [col for col in df_limpo.columns if "Unnamed" not in col]
-    df_limpo = df_limpo[colunas_validas]
-
-    print(f"🧹 Limpeza concluída: {df.shape[1] - df_limpo.shape[1]} colunas removidas.")
+    print(f"Removido todas as colunas e linhas totalmente vazias!")
     return df_limpo
 
 def concat_dfs(df_left: pd.DataFrame, df_right: pd.DataFrame, axis_df: int = 0, ignore_index_df: bool = True, join_df: str ='outer') -> pd.DataFrame:
