@@ -2,36 +2,40 @@ from __future__ import annotations
 
 import pandas as pd
 from fastapi import HTTPException
-import os
-import sys
 from pathlib import Path
 
-
-
-sys.path.append('./../../..')  # Ajuste para garantir acesso ao config_path
-
-from config_path import RAW_DATA_DIRECTORY_PATH, PROCESSED_DATA_DIRECTORY_PATH
+import config_path_api
 from schemas.schemas import InfoDataset, AmostraDataset, FiltrosDataset
+
+# ──────────────────────────────────────────────
+#  Visualização de diretorios
+# ──────────────────────────────────────────────
+def visualizar_diretorios() -> dict:
+    diretor
+
 
 # ──────────────────────────────────────────────
 #  Dataset fixo
 # ──────────────────────────────────────────────
-NOME_DATASET       = "bdqueimadas_completo.parquet"
-_CAMINHO_PROCESSED = PROCESSED_DATA_DIRECTORY_PATH / NOME_DATASET
-_CAMINHO_RAW       = RAW_DATA_DIRECTORY_PATH       / NOME_DATASET
+_NOME_DATASET = "bdqueimadas_completo.parquet"
 
-
-def _caminho_dataset():
+def _caminho_dataset() -> Path:
     """Prioriza processed/, cai em raw/ se não encontrar."""
-    if _CAMINHO_PROCESSED.exists():
-        return _CAMINHO_PROCESSED
-    if _CAMINHO_RAW.exists():
-        return _CAMINHO_RAW
+    _caminho_processed = config_path_api.PROCESSED_DATA_DIRECTORY_PATH / _NOME_DATASET
+    _caminho_raw       = config_path_api.RAW_DATA_DIRECTORY_PATH / _NOME_DATASET
+    _caminho_features  = config_path_api.FEATURES_DIRECTORY_PATH / _NOME_DATASET
+
+    if _caminho_features.exists():
+        return _caminho_features    
+    if _caminho_processed.exists():
+        return _caminho_processed
+    if _caminho_raw.exists():
+        return _caminho_raw
     raise HTTPException(
         status_code=404,
         detail=(
-            f"Dataset '{NOME_DATASET}' não encontrado. Esperado em:\n"
-            f"  {_CAMINHO_PROCESSED}\n  {_CAMINHO_RAW}"
+            f"Dataset '{_NOME_DATASET}' não encontrado. Esperado em:\n"
+            f"  {_caminho_processed}\n  {_caminho_raw}\n  {_caminho_features}"
         ),
     )
 
@@ -81,7 +85,7 @@ def obter_info() -> InfoDataset:
     ufs    = sorted(df["Nome_UF"].dropna().unique().tolist()) if "Nome_UF" in df.columns else None
 
     return InfoDataset(
-        nome             = NOME_DATASET,
+        nome             = _NOME_DATASET,
         caminho          = str(caminho),
         linhas           = len(df),
         colunas          = len(df.columns),

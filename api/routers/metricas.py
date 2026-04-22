@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Query
-from schemas import EntradaAvaliacao, ResultadoMetricas, TipoModelo
+from schemas.schemas import EntradaAvaliacao, ResultadoMetricas, TipoModelo
 import services.metricas_service as svc
 
 router = APIRouter(prefix="/metricas", tags=["Métricas"])

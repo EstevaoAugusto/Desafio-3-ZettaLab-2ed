@@ -12,8 +12,8 @@ from sklearn.metrics import (
     mean_absolute_error, mean_squared_error, r2_score,
 )
 
-from config_path import METRICS_DIRECTORY_PATH
-from schemas import (
+from config_path_api import METRICS_DIRECTORY_PATH
+from schemas.schemas import (
     EntradaAvaliacao, ResultadoMetricas,
     MetricasClassificacao, MetricasRegressao,
     TipoModelo,

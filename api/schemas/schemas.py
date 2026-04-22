@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from pydantic import BaseModel, Field
-from typing import Optional, List, Any, Dict
+from typing import Optional, List, Any, Dict, Union
 from enum import Enum
-
+from pathlib import Path
 
 # ──────────────────────────────────────────────
 #  Enums
@@ -44,7 +44,7 @@ class FormatoArquivo(str, Enum):
 # ──────────────────────────────────────────────
 class InfoDataset(BaseModel):
     nome:              str
-    caminho:           str
+    caminho:           Union[str, Path]
     linhas:            int
     colunas:           int
     tamanho_mb:        float
@@ -81,7 +81,7 @@ class FiltrosDataset(BaseModel):
 class InfoModelo(BaseModel):
     nome:           str
     tipo:           TipoModelo
-    caminho:        str
+    caminho:        Union[str, Path]
     tamanho_mb:     float
     num_features:   Optional[int]       = None
     feature_names:  Optional[List[str]] = None

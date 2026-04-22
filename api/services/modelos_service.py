@@ -3,9 +3,9 @@ from __future__ import annotations
 import os
 import joblib
 from fastapi import HTTPException
-
-from config_path import MODELS_DIRECTORY_PATH
-from schemas import InfoModelo, ListaModelos, TipoModelo
+import scripts.modeling as modeling
+from config_path_api import MODELS_DIRECTORY_PATH
+from schemas.schemas import InfoModelo, ListaModelos, TipoModelo
 
 # ──────────────────────────────────────────────
 #  Cache de modelos em memória
@@ -112,7 +112,15 @@ def listar_modelos() -> ListaModelos:
             detail=f"Nenhum arquivo .joblib encontrado em {MODELS_DIRECTORY_PATH}",
         )
 
-    return ListaModelos(total=len(arquivos), modelos=[obter_info_modelo(f) for f in arquivos])
+    model_infos = []
+    for arq in arquivos:
+        _, model_info = modeling.carregar_modelo_e_info(MODELS_DIRECTORY_PATH / arq)
+        model_infos.append(model_info)
+    
+    return ListaModelos(
+        total=len(model_infos),
+        modelos=model_infos,
+    )
 
 
 def limpar_cache() -> dict:
