@@ -22,7 +22,7 @@
 
 
 # ── Build stage: instala dependências com uv ──────────────────
-FROM python:3.11-slim AS builder
+FROM python:3.13-slim AS builder
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
 
@@ -31,16 +31,19 @@ WORKDIR /app
 # Copia lockfiles da raiz do projeto (onde o uv os gerencia)
 COPY pyproject.toml uv.lock* ./
 
-# Instala apenas as dependências de produção no venv local
-RUN uv sync --frozen --no-install-project --no-dev
+# Cria e instala as dependências no venv local
+RUN uv venv .venv && uv sync --frozen --no-install-project --no-dev
 
 
 # ── Runtime stage: imagem final enxuta ────────────────────────
-FROM python:3.11-slim AS runtime
-
-# COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
+FROM python:3.13-slim AS runtime
 
 WORKDIR /app
+
+# Instalar dependências do sistema para LightGBM (libgomp = OpenMP)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
 
 # Traz o virtualenv pronto do build stage
 COPY --from=builder /app/.venv /app/.venv
@@ -69,5 +72,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
 
 # ── Comando de inicialização ──────────────────────────────────
 # main.py está em api/, mas uvicorn precisa do módulo relativo a /app
-# CMD ["python", "-m", "uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
-CMD ["/app/.venv/bin/python3", "-m", "uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Usar 'python' funciona porque PATH já inclui .venv/bin
+CMD ["python", "-m", "uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
