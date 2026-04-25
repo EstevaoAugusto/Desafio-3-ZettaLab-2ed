@@ -51,9 +51,11 @@ COPY --from=builder /app/.venv /app/.venv
 # Copia o código da API
 COPY api/ ./api/
 
-# Copia scripts/ — necessário pois modelos_service.py faz
-# `import scripts.modeling`
+# Copia scripts/ — necessário pois modelos_service.py faz `import scripts.modeling`
 COPY scripts/ ./scripts/
+
+# config_path.py fica na raiz e é importado por scripts/modeling.py
+COPY config_path.py ./
 
 # ── Variáveis de ambiente ─────────────────────────────────────
 ENV PATH="/app/.venv/bin:$PATH" \

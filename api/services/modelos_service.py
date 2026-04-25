@@ -4,10 +4,8 @@ import os
 import joblib
 from fastapi import HTTPException
 import lightgbm
-import scripts.modeling as modeling
 from api.config_path_api import MODELS_DIRECTORY_PATH
 from api.schemas.schemas import InfoModelo, ListaModelos, TipoModelo
-from fastapi.encoders import jsonable_encoder
 
 # ──────────────────────────────────────────────
 #  Cache de modelos em memória
@@ -31,7 +29,6 @@ def _inferir_tipo(nome_arquivo: str) -> TipoModelo:
 
 
 def carregar_modelo(nome_arquivo: str):
-    """Carrega um .joblib de MODELS_DIRECTORY_PATH com cache em memória."""
     caminho = MODELS_DIRECTORY_PATH / nome_arquivo
 
     if not caminho.exists():
@@ -43,7 +40,8 @@ def carregar_modelo(nome_arquivo: str):
     chave = str(caminho)
     if chave not in _cache:
         try:
-            _cache[chave] = joblib.load(caminho)
+            raw = joblib.load(caminho)
+            _cache[chave] = raw["modelo"] if isinstance(raw, dict) and "modelo" in raw else raw
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Erro ao carregar modelo '{nome_arquivo}': {str(e)}")
 
@@ -59,10 +57,14 @@ def obter_info_modelo(nome_arquivo: str) -> InfoModelo:
             detail=f"Modelo '{nome_arquivo}' não encontrado em {MODELS_DIRECTORY_PATH}",
         )
 
-    modelo     = carregar_modelo(nome_arquivo)
-    tipo       = _inferir_tipo(nome_arquivo)
     tamanho_mb = round(caminho.stat().st_size / (1024 * 1024), 3)
 
+    try:
+        modelo = joblib.load(caminho)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao abrir '{nome_arquivo}': {str(e)}")
+
+    tipo   = _inferir_tipo(nome_arquivo)
     feature_names: list | None = None
     num_features:  int  | None = None
     num_classes:   int  | None = None
@@ -70,15 +72,10 @@ def obter_info_modelo(nome_arquivo: str) -> InfoModelo:
 
     try:
         estimador = list(modelo.named_steps.values())[-1] if hasattr(modelo, "named_steps") else modelo
-
-        if hasattr(estimador, "feature_name_"):
-            feature_names = list(estimador.feature_name_)
-        elif hasattr(estimador, "feature_names_in_"):
+        if hasattr(estimador, "feature_names_in_"):
             feature_names = list(estimador.feature_names_in_)
-
         if hasattr(estimador, "n_features_in_"):
             num_features = int(estimador.n_features_in_)
-
         if tipo == TipoModelo.classificacao:
             if hasattr(estimador, "n_classes_"):
                 num_classes = int(estimador.n_classes_)
@@ -86,6 +83,10 @@ def obter_info_modelo(nome_arquivo: str) -> InfoModelo:
                 classes = [str(c) for c in estimador.classes_]
     except Exception:
         pass
+
+    chave = str(caminho)
+    if chave not in _cache:
+        _cache[chave] = modelo
 
     return InfoModelo(
         nome          = nome_arquivo,
@@ -114,14 +115,8 @@ def listar_modelos() -> ListaModelos:
             detail=f"Nenhum arquivo .joblib encontrado em {MODELS_DIRECTORY_PATH}",
         )
 
-    model_infos = []
-    for arq in arquivos:
-        _, model_info = modeling.carregar_modelo_e_info(MODELS_DIRECTORY_PATH / arq)
-        
-        
-        model_infos.append(model_info.__dict__)  # Converte para dict usando o método jsonable() do Pydantic
-    
-    
+    model_infos = [obter_info_modelo(arq) for arq in arquivos]
+
     return ListaModelos(
         total=len(model_infos),
         modelos=model_infos,

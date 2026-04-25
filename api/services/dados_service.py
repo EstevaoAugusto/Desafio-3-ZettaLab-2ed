@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import pandas as pd
 from fastapi import HTTPException
 from pathlib import Path
@@ -7,11 +8,31 @@ from pathlib import Path
 import api.config_path_api as config_path_api
 from api.schemas.schemas import InfoDataset, AmostraDataset, FiltrosDataset
 
+
+def _to_records(df: pd.DataFrame) -> list[dict]:
+    """Converte DataFrame para lista de dicts JSON-serializável (sem NaN/NaT/Inf)."""
+    df = df.copy()
+    for col in df.select_dtypes(include=["datetime64", "datetimetz"]).columns:
+        df[col] = df[col].astype(object).where(df[col].notna(), other=None)
+    for col in df.select_dtypes(include=["category"]).columns:
+        df[col] = df[col].astype(object)
+    records = df.to_dict(orient="records")
+    return [
+        {k: (None if (isinstance(v, float) and (math.isnan(v) or math.isinf(v))) else v)
+         for k, v in row.items()}
+        for row in records
+    ]
+
 # ──────────────────────────────────────────────
 #  Visualização de diretorios
 # ──────────────────────────────────────────────
 def visualizar_diretorios() -> dict:
-    diretor
+    return {
+        "features":       str(config_path_api.FEATURES_DIRECTORY_PATH),
+        "data_processed": str(config_path_api.PROCESSED_DATA_DIRECTORY_PATH),
+        "data_raw":       str(config_path_api.RAW_DATA_DIRECTORY_PATH),
+        "models":         str(config_path_api.MODELS_DIRECTORY_PATH),
+    }
 
 
 # ──────────────────────────────────────────────
@@ -129,7 +150,7 @@ def obter_dados_filtrados(filtros: FiltrosDataset) -> AmostraDataset:
 
     return AmostraDataset(
         colunas      = df.columns.tolist(),
-        dados        = df.head(filtros.n_linhas).fillna("null").to_dict(orient="records"),
+        dados        = _to_records(df.sample(n=min(filtros.n_linhas, len(df)), random_state=42)),
         total_linhas = len(df),
     )
 
