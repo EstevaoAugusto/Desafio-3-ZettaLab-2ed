@@ -27,8 +27,8 @@ Combate e Prevenção de Incêndios
 ## Pré-requisitos
 
 - [Python 3.11+](https://www.python.org/downloads/) 
-- [UV](https://github.com/astral-sh/uv) (Gerenciador de dependências) [cite: 2, 3]
-- [Docker & Docker Compose](https://www.docker.com/) [cite: 2, 4]
+- [UV](https://github.com/astral-sh/uv) (Gerenciador de dependências)
+- [Docker & Docker Compose](https://www.docker.com/)
 
 ## Instalação e Execução
 
@@ -46,9 +46,14 @@ uv sync
 
 3. Configure o ambiente:
 ```bash
-python config_path.py 
+# Cria todos os diretorios necessarios do projeto caso nao estejam pre
+python config_path.py
+
+# O projeto usa o datalake da biblioteca 'BaseDosDados' a qual necessita do ID projeto Google Cloud.
 echo "GOOGLE_CLOUD_ID_PROJECT='<id-projeto-aqui>'" > .env 
 ```
+
+4. Caso deseja visualizar os notebooks, execute-os sequencialmente no diretório 'notebooks'
 
 ---
 
@@ -89,4 +94,3 @@ O projeto segue as etapas de Entendimento de Negócio, Compreensão, Preparaçã
 - Lorrana Verdi Flores (Desenvolvimento de Software) 
 - Bruna Oliveira Pereira (Geotecnologia) 
 - Geovanna Alexandre Possidonio (Gestão de Projetos) 
-```

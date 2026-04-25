@@ -26,6 +26,10 @@ Após o comando, o terminal indicará que o servidor está rodando. Abra o seu n
 
 - ```http://127.0.0.1:8050/```
 
+Caso queira acessar de forma online, o dashboard se encontra disponível no link abaixo:
+
+- [Dashboard Integrado Queimadas](https://b626dd25-f7bd-4228-b435-1f6817531623.plotly.app/)
+
 ## O que este Dashboard monitora?
 
 O painel foi desenhado para responder às três principais perguntas do projeto:

@@ -30,14 +30,32 @@ api/
 
 ---
 
-## 🚀 Instalação e Execução
 
-```bash
-# 1. Inicie o servidor
-uvicorn main:app --reload --port 8000
-```
+---
 
-Acesse a documentação interativa em: **http://localhost:8000/docs**
+## Execução com Docker
+
+Para executar a API em um ambiente containerizado, utilize o Docker Compose conforme descrito no [README principal](../README.md#execução-com-docker-recomendado).
+
+### Passos Rápidos:
+1. **Construir a imagem**:
+   ```bash
+   docker-compose build
+   ```
+
+2. **Subir os serviços**:
+   ```bash
+   docker-compose up
+   ```
+
+3. **Acessar a API**:
+   - Documentação: `http://localhost:8000/docs`
+   - Health check: `http://localhost:8000/health`
+
+### Notas:
+- A API roda na porta 8000 dentro do container.
+- Alterações no código são refletidas em tempo real devido aos volumes configurados (Hot Reload).
+- Os modelos e dados são persistidos via volumes para manter consistência entre execuções.
 
 ---
 
